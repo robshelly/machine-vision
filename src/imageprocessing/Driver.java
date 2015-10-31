@@ -13,7 +13,7 @@ public class Driver {
 		StdOut.println("Components: " + componentImage.countComponents());
 		//componentImage.binaryComponentImage().show();
 		//componentImage.colourComponentImage().show();
-		componentImage.highlightComponentImage().show();
+		//componentImage.highlightComponentImage().show();
 		
 	}
 }

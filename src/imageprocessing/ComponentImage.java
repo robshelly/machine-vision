@@ -61,6 +61,15 @@ public class ComponentImage {
 	}
 
 	/**
+	 * Returns the original picture
+	 * 
+	 * @return a Picture object
+	 */
+	public Picture getPicture() {
+		return pic;
+	}
+	
+	/**
 	 * Returns a binarised version of the original image
 	 * 
 	 * @return a picture object with all components surrounded by a red box
@@ -121,6 +130,7 @@ public class ComponentImage {
 	 */
 	public Picture colourComponentImage() {
 
+		//TODO Fix this, image is sometimes being binarised twice
 		Picture colourPic = new Picture(binaryComponentImage());
 
 		// Set of roots for objects needed before proceeding
@@ -145,15 +155,29 @@ public class ComponentImage {
 
 	}
 
+	
 	/**
-	 * Returns the original image with each object bounded by a red box.
+	 * Returns an image with all analysed objects surrounded by a red box
+	 * Method takes in an image as a paramter and returns this image
+	 * with the red boxes drawn on it
 	 * 
-	 * @return a picture object with all components surrounded by a red box
+	 * This allows the user to choose which type of image they would
+	 * like to view in the highlighted mode i.e. the original picture
+	 * a binary picture or a coloured objects picture
+	 * 
+	 * @param pic The image to be highlighted
+	 * @return The image with the objects highlighted
 	 */
-	public Picture highlightComponentImage() {
-
-		//Picture highlightedPic = new Picture(binaryComponentImage());
+	public Picture highlightComponentImage(Picture pic) {
+		
+		//create copy of image in parameter
+		//This avoid overwriting the global field pic
+		//if the user chooses to use the original image as the parameter
 		Picture highlightedPic = new Picture(pic);
+
+		//TODO Testing
+		//Picture highlightedPic = new Picture(binaryComponentImage());
+		//Picture highlightedPic = new Picture(pic);
 
 		// Set of roots for objects needed before proceeding
 		if (!rootsSetBuilt) {
@@ -233,15 +257,6 @@ public class ComponentImage {
 	}
 
 	/**
-	 * Returns the original picture
-	 * 
-	 * @return a Picture object
-	 */
-	public Picture getPicture() {
-		return pic;
-	}
-
-	/**
 	 * Returns the threshold for image binarisation
 	 * 
 	 * @return an integer in the range of 0 to 255
@@ -278,7 +293,7 @@ public class ComponentImage {
 	 */
 	private void connectComponents() {
 		
-		// Image must binary in order to connect pixels
+		// Image must be binary in order to connect pixels
 		Picture copy = new Picture(binaryComponentImage());
 		
 		
