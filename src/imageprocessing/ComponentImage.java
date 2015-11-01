@@ -19,6 +19,7 @@ import edu.princeton.cs.introcs.StdOut;
 public class ComponentImage {
 
 	private Picture pic; // picture to analyse
+	private Picture binaryPic; //binary version of pic
 	private HashMap<Integer, Color> roots;  // Maps roots to colors
 											// Serves two purposes:
 											// using map.keySet(), acts as a set of roots
@@ -28,10 +29,12 @@ public class ComponentImage {
 	private int w; // width of pic
 	private int h; // height of pic
 	private int threshold;	//a value from 0 - 255 that defines the threshold for binarisation
-
-	private boolean connected; // flag that indicates if image has been analysed
+	
+	private boolean binarised;	//flag that indicates if a binary version of
+								// image has already been obtained
+	private boolean connected;	// flag that indicates if image has been analysed
 								// yet
-	private boolean rootsSetBuilt; // flag that indicates if set of roots has
+	private boolean rootsSetBuilt;	// flag that indicates if set of roots has
 									// been built
 
 	/**
@@ -43,20 +46,30 @@ public class ComponentImage {
 	 */
 	public ComponentImage(String fileLocation) {
 		pic = new Picture(fileLocation);
+		binaryPic = null;
 		threshold = 128;
 		initialise();
 	}
 	
 	/**
 	 * Alternate Constructor for Component Image
-	 * Uses a Picture objet as a parameter
+	 * Uses a Picture object as a parameter
 	 * to initialise the pic field
+	 * Takes in a threshold parameter so that threshold is initialied
+	 * at a value consistent with gui's threshold slider 
 	 * 
 	 * @param picture Picture object the image
+	 * @param threshold The threshold for binarisation
 	 */
-	public ComponentImage(Picture picture) {
+	public ComponentImage(Picture picture, int threshold) {
 		pic = picture;
-		threshold = 128;
+		if (threshold < 0) {
+			this.threshold = 0;
+		} else if (threshold > 256) {
+			this.threshold = 256;
+		} else {
+			this.threshold = threshold;
+		}
 		initialise();
 	}
 
@@ -76,31 +89,39 @@ public class ComponentImage {
 	 */
 	public Picture binaryComponentImage() {
 
-		Picture binaryPic = new Picture(pic);
-
-		// convert to grayscale
-		for (int x = 0; x < binaryPic.width(); x++) {
-			for (int y = 0; y < binaryPic.height(); y++) {
-				Color color = binaryPic.get(x, y);
-				Color gray = Luminance.toGray(color);
-				binaryPic.set(x, y, gray);
-
-			}
-		}
-
-		// convert to binary
-
-		for (int x = 0; x < binaryPic.width(); x++) {
-			for (int y = 0; y < binaryPic.height(); y++) {
-				Color c = binaryPic.get(x, y);
-				if (Luminance.lum(c) < threshold) {
-					binaryPic.set(x, y, Color.BLACK);
-				} else {
-					binaryPic.set(x, y, Color.WHITE);
+		if (binarised) {
+			return binaryPic;
+		} else {
+			Picture binaryPic = new Picture(pic);
+			
+			// convert to grayscale
+			for (int x = 0; x < binaryPic.width(); x++) {
+				for (int y = 0; y < binaryPic.height(); y++) {
+					Color color = binaryPic.get(x, y);
+					Color gray = Luminance.toGray(color);
+					binaryPic.set(x, y, gray);
+	
 				}
 			}
+	
+			// convert to binary
+	
+			for (int x = 0; x < binaryPic.width(); x++) {
+				for (int y = 0; y < binaryPic.height(); y++) {
+					Color c = binaryPic.get(x, y);
+					if (Luminance.lum(c) < threshold) {
+						binaryPic.set(x, y, Color.BLACK);
+					} else {
+						binaryPic.set(x, y, Color.WHITE);
+					}
+				}
+			}
+			
+			StdOut.println("Binarising Image");
+			this.binaryPic = binaryPic;
+			binarised = true;
 		}
-		StdOut.println("Binarising Image");
+		
 		return binaryPic;
 	}
 	
@@ -115,7 +136,7 @@ public class ComponentImage {
 		// into object before continuing
 		if (!connected) {
 			//connectComponents();
-			connectComponentsOnePass();
+			connectComponents();
 		}
 
 		// To return object count, deduct 1 from ufs count
@@ -130,13 +151,16 @@ public class ComponentImage {
 	 */
 	public Picture colourComponentImage() {
 
-		//TODO Fix this, image is sometimes being binarised twice
-		Picture colourPic = new Picture(binaryComponentImage());
-
 		// Set of roots for objects needed before proceeding
+		
 		if (!rootsSetBuilt) {
 			buildRootsSet();
 		}
+		
+		//To colour image start with a binary image
+		//set of roots is guaranteed built now (from above)
+		//therefore, binaryPic is guaranteed to exist
+		Picture colourPic = binaryPic;
 
 		// Iterate through pixels
 		// If root is not zero (i.e. not a background pixel)
@@ -171,13 +195,9 @@ public class ComponentImage {
 	public Picture highlightComponentImage(Picture pic) {
 		
 		//create copy of image in parameter
-		//This avoid overwriting the global field pic
+		//This avoids overwriting the global field pic
 		//if the user chooses to use the original image as the parameter
 		Picture highlightedPic = new Picture(pic);
-
-		//TODO Testing
-		//Picture highlightedPic = new Picture(binaryComponentImage());
-		//Picture highlightedPic = new Picture(pic);
 
 		// Set of roots for objects needed before proceeding
 		if (!rootsSetBuilt) {
@@ -203,8 +223,6 @@ public class ComponentImage {
 		for (Integer root : roots.keySet()) {
 			componentIndex.put(root, index);
 			index++;
-			// StdOut.println("Component with root " + root + " has index " +
-			// index);
 		}
 
 		// Set boundary components for every component in one pass
@@ -220,8 +238,6 @@ public class ComponentImage {
 					// Add one to upper boundaries
 					// This ensures boxes fully contain objects
 					// i.e. they don't overlap the edges
-					// TODO Implement the above but add validation
-					// to avoid out of bounds exceptions
 					if (x <= lowerXValues[i])
 						lowerXValues[i] = x - 1;
 					if (x >= upperXValues[i])
@@ -230,18 +246,7 @@ public class ComponentImage {
 						lowerYValues[i] = y - 1;
 					if (y >= upperYValues[i])
 						upperYValues[i] = y + 1;
-					
-					//bad version
-//					if (x <= lowerXValues[i])
-//						lowerXValues[i] = x;
-//					if (x >= upperXValues[i])
-//						upperXValues[i] = x;
-//					if (y <= lowerYValues[i])
-//						lowerYValues[i] = y;
-//					if (y >= upperYValues[i])
-//						upperYValues[i] = y;
 				}
-
 			}
 		}
 
@@ -278,147 +283,14 @@ public class ComponentImage {
 	public void setThreshold(int threshold) {
 		if (threshold < 0) {
 			this.threshold = 0;
-		} else if (threshold > 255) {
-			this.threshold = 255;
+		} else if (threshold > 256) {
+			this.threshold = 256;
 		} else {
 			this.threshold = threshold;
 		}
 		initialise();
 	}
-		
-	/**
-	 * Performs raster scan of image Connects pixels of equal colour using
-	 * union-find algorithm
-	 * Builds a count of the number of components that comprise the image
-	 */
-	private void connectComponents() {
-		
-		// Image must be binary in order to connect pixels
-		Picture copy = new Picture(binaryComponentImage());
-		
-		
-		// Pixels located at coordinates (x,y) are mapped to
-		// an index in the array in WeightedQuickUnion according
-		// to the following equation:
-		// i = ( (y * width) + x)
 
-		// First Scan
-		// Scan through image, give each pixel a label based on colour
-		// Assume top left most pixel, (0, 0) is part of the background
-
-		// StdOut.println("First Pass: Assigning Labels");
-		for (int y = 0; y < h; y++) {
-			for (int x = 0; x < w; x++) {
-
-				// i = index of current pixel
-				int i = (y * w + x);
-
-				// Assume the first pixel is background
-				// If pixel is same colour as background
-				// don't analyse pixel
-				// just union it with the first pixel
-				if ((copy.get(x, y).equals(copy.get(0, 0))) &&
-				// Do not union first pixel with first pixel
-				// This will result in an inaccurate component count
-						((x > 0) || (y > 0))) {
-					uf.union(i, 0);
-				} else {
-
-					// Check pixel not in topmost row or leftmost column
-					// If pixel to left and top both have same value,
-					// union with whichever has lower root
-					// union with either if they have the same root
-					if ((x > 0) && (copy.get(x, y).equals(copy.get(x - 1, y)))
-							&& (y > 0)
-							&& (copy.get(x, y).equals(copy.get(x, y - 1)))) {
-						// assign lower root to current pixel
-						// if root(above) < root(left)
-						if (uf.root((y - 1) * w + x) <= uf
-								.root((y * w) + x - 1)) {
-							uf.union(i, ((y - 1) * w + x));
-						} else {
-							uf.union(i, (y * w + x - 1));
-						}
-						// StdOut.println("(" + x + ", " + y +
-						// "): Pixel to left and above have same value.");
-
-						// Check not in leftcolumn row
-						// if pixel to left has same value, union with current
-						// pixel
-					} else if ((x > 0)
-							&& (copy.get(x, y).equals(copy.get(x - 1, y)))) {
-						uf.union(i, (y * w + x - 1));
-						// StdOut.println("(" + x + ", " + y +
-						// "): Pixel left has same value");
-
-						// Check not in topmost row
-						// if pixel above has same value,, union with current
-						// pixel
-					} else if ((y > 0)
-							&& (copy.get(x, y).equals(copy.get(x, y - 1)))) {
-						uf.union(i, (y - 1) * w + x);
-						// StdOut.println("(" + x + ", " + y +
-						// "): Pixel above has same value");
-					}
-
-					// Implied else statement here
-					// If neither pixel above or left has same value
-					// then do nothing, pixel is not connected
-					// so it is remains with its intialised (and thus unique)
-					// root
-
-					// StdOut.println("(" + x + ", " + y + ") ID: " +
-					// uf.getId(i) +
-					// ", Root: " + uf.root(i));
-				}
-			}
-		}
-
-		// Now scan to detect equivalent roots
-		// This means scanning through pixels for adjacent same colour pixels
-		// with different roots
-		// this means they are part of the same component but have not yet been
-		// connected
-
-		// StdOut.println("Second Pass: Detecting Equivalent Roots");
-		for (int y = 0; y < h; y++) {
-			for (int x = 0; x < w; x++) {
-
-				int i = (y * w + x);
-
-				if (uf.root(i) != 0) {
-					// check left for same value, but different root
-					if ((x > 0) && (copy.get(x, y).equals(copy.get(x - 1, y)))
-							&& (uf.root(i) != uf.root(y * w + x - 1))) {
-						uf.union(i, (y * w + x - 1));
-					}
-					// check above for same value, but different root
-					if ((y > 0) && (copy.get(x, y).equals(copy.get(x, y - 1)))
-							&& (uf.root(i) != uf.root((y - 1) * w + x))) {
-						uf.union(i, ((y - 1) * w + x));
-					}
-				}
-
-				// StdOut.println("(" + x + ", " + y + ") ID: " + uf.getId(i) +
-				// ", Root: " + uf.root(i));
-			}
-		}
-
-		// //Not necessary
-		// For console testing purposes only
-		// StdOut.println("Third Pass: Root Check");
-		// for (int y = 0; y < h; y++) {
-		// for (int x = 0; x < w; x++) {
-		//
-		// int i = (y * w + x);
-		// StdOut.println("(" + x + ", " + y + ") ID: " + uf.getId(i) +
-		// ", Root: " + uf.root(i));
-		//
-		// }
-		// }
-		connected = true;
-	}
-	
 	/**
 	 * Builds a map of unique roots, each one corresponding to an object in the
 	 * image Maps each root to a randomly generated colour Can be used to return
@@ -429,7 +301,7 @@ public class ComponentImage {
 		// Use union find algorithms to connect pixels
 		// into object before continuing
 		if (!connected) {
-			connectComponentsOnePass();
+			connectComponents();
 		}
 		
 		for (int y = 0; y < h; y++) {
@@ -502,18 +374,30 @@ public class ComponentImage {
 	 * Therefore calling this method clear old vaues from fields
 	 */
 	private void initialise() {
+		binaryPic = null;
 		roots = new HashMap<Integer, Color>();
 		uf = new WeightedQuickUnionUF(pic.width() * pic.height());
 		w = pic.width();
 		h = pic.height();
+		binarised = false;
 		connected = false;
 		rootsSetBuilt = false;
 	}
 	
-	private void connectComponentsOnePass() {
+	/**
+	 * Performs raster scan of image Connects pixels of equal colour using
+	 * union-find algorithm
+	 * Builds a count of the number of components that comprise the image
+	 */
+	private void connectComponents() {
 		
-		// Image must binary in order to connect pixels
-		Picture copy = new Picture(binaryComponentImage());
+		//To colour image start with a binary image
+		Picture copy;
+		if (binarised) {
+			copy = binaryPic;
+		} else {
+			copy = new Picture(binaryComponentImage());
+		}
 		
 		
 		// Pixels located at coordinates (x,y) are mapped to

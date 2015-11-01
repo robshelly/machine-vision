@@ -17,7 +17,6 @@ public class FileSelector {
 		JFileChooser fc = new JFileChooser();
 		boolean validChoice = false;
 		while (!validChoice) {
-			//fc.showOpenDialog(frame);
 	
 			if (fc.showOpenDialog(frame) != JFileChooser.CANCEL_OPTION) {
 				File file = fc.getSelectedFile();
@@ -25,7 +24,6 @@ public class FileSelector {
 					pic = new Picture(file);
 					validChoice = true;
 				} catch (Exception e) {
-					//TODO not a picture dialog
 					JOptionPane.showMessageDialog(frame, "Invalid File Type!"
 							+ "\nPlease select an image file type", "Error", JOptionPane.INFORMATION_MESSAGE);
 				}
