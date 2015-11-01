@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import edu.princeton.cs.introcs.Picture;
-import edu.princeton.cs.introcs.StdOut;
 
 /*************************************************************************
  * Compilation: javac ConnectedComponentImage.java
@@ -117,7 +116,6 @@ public class ComponentImage {
 				}
 			}
 			
-			StdOut.println("Binarising Image");
 			this.binaryPic = binaryPic;
 			binarised = true;
 		}
@@ -475,26 +473,9 @@ public class ComponentImage {
 					// then do nothing, pixel is not connected
 					// so it is remains with its intialised (and thus unique)
 					// root
-
-					// StdOut.println("(" + x + ", " + y + ") ID: " +
-					// uf.getId(i) +
-					// ", Root: " + uf.root(i));
 				}
 			}
 		}
-		// //Not necessary
-		// For console testing purposes only
-		// StdOut.println("Third Pass: Root Check");
-		// for (int y = 0; y < h; y++) {
-		// for (int x = 0; x < w; x++) {
-		//
-		// int i = (y * w + x);
-		// StdOut.println("(" + x + ", " + y + ") ID: " + uf.getId(i) +
-		// ", Root: " + uf.root(i));
-		//
-		// }
-		// }
-		StdOut.println("No second pass needed");
 		connected = true;
 	}
 	

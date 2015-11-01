@@ -19,12 +19,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingConstants;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
 import edu.princeton.cs.introcs.Picture;
-import edu.princeton.cs.introcs.StdOut;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -190,18 +190,25 @@ public class MainInterface implements ActionListener, ChangeListener {
 		});
 		highlightMenu.add(checkHighlight);
 
+		//Object count label on menubar
 		menuBar.add(Box.createHorizontalGlue());
-		count = new JLabel("Objects:     ");
+		count = new JLabel("Objects:     ", SwingConstants.RIGHT);
+		//Set the width of the label to avoid it changing when
+		//the number of digits in the count changes
+		count.setPreferredSize(new Dimension(100, 10));
 		count.setBorder(new EmptyBorder(0, 10, 0, 10));
 		menuBar.add(count);
+		
+		
 
-		// Always select a file on initialisation
-		selectFile();
 		// Set currentMode to original image
 		currentMode = "original";
 		// Set the object info to say no image has been processed yet
 		objectsInfo = "No Image Processed";
 		count.setToolTipText(objectsInfo);
+		
+		// Always select a file on initialisation
+		selectFile();
 
 	}
 
@@ -255,6 +262,9 @@ public class MainInterface implements ActionListener, ChangeListener {
 
 		imgPanel.add(scroll, BorderLayout.CENTER);
 		imgPanel.validate();
+		
+		//display the object count
+		displayObjectCount();
 	}
 
 	/*
@@ -273,18 +283,14 @@ public class MainInterface implements ActionListener, ChangeListener {
 		// Adjust binary image and count objects as slider moves
 		if (ci.getPicture().height() * ci.getPicture().width() <= 65536) {
 			ci.setThreshold(source.getValue());
-			StdOut.println("Threshold is " + ci.getThreshold());
 			displayImage();
-			displayObjectCount();
 
 			// For large images binarising and counting takes longer
 			// Therefore, only binarise and count after slider has settled
 		} else {
 			if (!source.getValueIsAdjusting()) {
 				ci.setThreshold(source.getValue());
-				StdOut.println("Threshold is " + ci.getThreshold());
 				displayImage();
-				displayObjectCount();
 			}
 		}
 	}
@@ -390,7 +396,6 @@ public class MainInterface implements ActionListener, ChangeListener {
 		adjustWindowSize();
 	}
 
-	// TESTING
 	/*
 	 * Action Listener for Image Processing radio buttons group (non-Javadoc)
 	 * 
@@ -399,7 +404,6 @@ public class MainInterface implements ActionListener, ChangeListener {
 	 */
 	public void actionPerformed(ActionEvent e) {
 		currentMode = e.getActionCommand();
-		StdOut.println(e.getActionCommand());
 		displayImage();
 	}
 }
