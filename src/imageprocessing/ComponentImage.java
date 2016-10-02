@@ -477,6 +477,5 @@ public class ComponentImage {
 			}
 		}
 		connected = true;
-	}
-	
+	}	
 }
